@@ -19,7 +19,7 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="Vault-Tracker Backend API")
+app = FastAPI(title="Vault-Tracker Intelligence API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,6 +62,13 @@ class GraphRequest(BaseModel):
 class MemoryRequest(BaseModel):
     events: list[dict]
     inventory: list[dict]
+
+class AutopsyRequest(BaseModel):
+    waste_events: list[dict]
+
+class SimulationRequest(BaseModel):
+    inventory: list[dict]
+    days: int = 7
 
 FOOD_IMAGE_REGISTRY = {
     "pasta": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80",
@@ -365,7 +372,7 @@ async def calculate_lifecycle_stats(events: list[dict]):
 
     return {"item_analytics": analytics}
 
-# --- Feature 2: Future Fridge / Consumption Prediction ---
+# --- Feature 2 & 8: Future Fridge & "What NOT to Buy" Engine ---
 @app.post("/api/forecast/depletion")
 async def forecast_depletion(payload: ForecastRequest):
     today = date.today()
@@ -377,6 +384,7 @@ async def forecast_depletion(payload: ForecastRequest):
             item_events.setdefault(name, []).append(ev)
 
     predictions = []
+    what_not_to_buy = []
 
     for item in payload.inventory:
         name = item.get("item_name", "").lower().strip()
@@ -415,6 +423,17 @@ async def forecast_depletion(payload: ForecastRequest):
                     "recommended_purchase": rec_purchase,
                     "has_history": True
                 })
+
+                # Feature 8: "What NOT to Buy" determination
+                if days_left >= 10:
+                    status = "DON'T BUY" if days_left >= 14 else "WAIT"
+                    what_not_to_buy.append({
+                        "item_name": item.get("item_name"),
+                        "current_qty": current_qty,
+                        "days_covered": days_left,
+                        "status": status,
+                        "reason": f"Stock lasts {days_left} more days based on current burn rate ({round(daily_burn, 2)} units/day)."
+                    })
                 continue
 
         predictions.append({
@@ -436,7 +455,8 @@ async def forecast_depletion(payload: ForecastRequest):
     return {
         "next_7_days": [p for p in active_predictions if p["days_left"] <= 7],
         "all_predictions": active_predictions,
-        "unpredicted": unpredicted
+        "unpredicted": unpredicted,
+        "what_not_to_buy": what_not_to_buy
     }
 
 # --- Feature 4: Ingredient Relationship Graph Engine ---
@@ -493,7 +513,7 @@ async def build_ingredient_graph(payload: GraphRequest):
         "connected_count": len(connected_names)
     }
 
-# --- Feature 5: Kitchen Memory & Behavioral Intelligence ---
+# --- Feature 5: Kitchen Memory ---
 @app.post("/api/kitchen-memory")
 async def analyze_kitchen_memory(payload: MemoryRequest):
     purchases = {}
@@ -564,14 +584,104 @@ async def analyze_kitchen_memory(payload: MemoryRequest):
 
     if not gemini_insight:
         gemini_insight = {
-            "primary_habit": "Produce purchases show higher frequency than usage velocity.",
-            "actionable_tip": "Batch perishable items into week-ahead meals to prevent expiration loss."
+            "primary_habit": "Perishable produce shows high reorder frequency.",
+            "actionable_tip": "Keep delicate items on top shelf to prevent forgotten waste."
         }
 
     return {
         "habits": habits,
         "recommendations": recommendations,
         "ai_insight": gemini_insight
+    }
+
+# --- Feature 6 & 8: Waste Autopsy & True Food Cost ---
+@app.post("/api/waste-autopsy")
+async def analyze_waste_autopsy(payload: AutopsyRequest):
+    reasons = {}
+    total_cost = 0.0
+    total_items = 0
+
+    for w in payload.waste_events:
+        r = w.get("reason", "Other")
+        c = float(w.get("estimated_cost", 50.0))
+        q = int(w.get("quantity", 1))
+
+        reasons[r] = reasons.get(r, 0) + q
+        total_cost += (c * q)
+        total_items += q
+
+    percentages = {}
+    if total_items > 0:
+        for r, cnt in reasons.items():
+            percentages[r] = round((cnt / total_items) * 100, 1)
+
+    annual_projection = round(total_cost * 12, 2)
+
+    prompt = f"""
+    Analyze these food waste autopsy reasons:
+    {json.dumps(percentages)}
+    Total Money Lost: ₹{total_cost}
+    
+    Give 2 actionable preventive steps to stop this specific waste reason.
+    Return JSON ONLY:
+    {{
+      "primary_cause": "string",
+      "curative_action": "string"
+    }}
+    """
+    ai_feedback = None
+    for model_name in VALID_MODELS:
+        try:
+            model = genai.GenerativeModel(model_name)
+            res = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            ai_feedback = json.loads(res.text.strip())
+            break
+        except Exception:
+            continue
+
+    if not ai_feedback:
+        ai_feedback = {
+            "primary_cause": "Items forgotten or bought in excess.",
+            "curative_action": "Organize priority cooking shelf for items with <48h remaining."
+        }
+
+    return {
+        "total_wasted_items": total_items,
+        "total_cost_lost": round(total_cost, 2),
+        "annual_projected_loss": annual_projection,
+        "reason_percentages": percentages,
+        "ai_autopsy": ai_feedback
+    }
+
+# --- Feature 10: Future Kitchen 7-Day & 30-Day Simulation ---
+@app.post("/api/simulate-kitchen")
+async def simulate_future_kitchen(payload: SimulationRequest):
+    days = payload.days
+    today = date.today()
+    cutoff = today + timedelta(days=days)
+
+    at_risk = []
+    projected_depleted = []
+
+    for item in payload.inventory:
+        try:
+            exp = date.fromisoformat(item.get("expiry_date", today.isoformat()))
+            if exp <= cutoff:
+                at_risk.append(item.get("item_name"))
+        except Exception:
+            pass
+        if int(item.get("quantity", 1)) <= 1:
+            projected_depleted.append(item.get("item_name"))
+
+    projected_remaining = max(len(payload.inventory) - len(at_risk), 0)
+
+    return {
+        "days": days,
+        "projected_remaining": projected_remaining,
+        "at_risk_expiry": at_risk,
+        "depleted_items": projected_depleted,
+        "projected_waste_events": len(at_risk),
+        "potential_rescue_meals": max(len(at_risk) // 2, 1)
     }
 
 @app.get("/")

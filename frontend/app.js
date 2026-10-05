@@ -4,7 +4,6 @@
 const SUPABASE_URL = "https://bqvndkxtuwzdtqeiojvc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxdm5ka3h0dXd6ZHRxZWlvanZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg4NDAsImV4cCI6MjEwNjY4NDg0MH0.VNSB_aD3sHdsZOw7O_BZze28B4BaGj60aewscqUS8iI";
 
-
 const isConfigured = Boolean(
   SUPABASE_URL && 
   !SUPABASE_URL.includes("YOUR_SUPABASE") && 
@@ -26,6 +25,7 @@ let selectedAppliance = "Any";
 let activeTimelineItem = null;
 let activeGraphData = { nodes: [], edges: [] };
 let graphNodePositions = [];
+let activeWasteTarget = null;
 
 window.addEventListener("DOMContentLoaded", () => {
   loadInventory();
@@ -34,6 +34,9 @@ window.addEventListener("DOMContentLoaded", () => {
   initRestockDrawer();
   initIngredientGraph();
   initKitchenMemory();
+  initDigitalTwin();
+  initWasteAutopsy();
+  initGamification();
 });
 
 async function loadInventory() {
@@ -52,6 +55,8 @@ async function loadInventory() {
     updateMetrics(currentItems);
     updateChart(currentItems);
     loadFutureFridgePredictions();
+    updateDigitalTwinUI();
+    updateUnifiedAIHub();
   } catch (err) {
     listContainer.innerHTML = `<div class="bg-red-50 p-4 rounded-xl text-red-700 text-sm">${err.message}</div>`;
   }
@@ -88,6 +93,7 @@ function renderCards(items) {
 
   container.innerHTML = items.map((item, index) => {
     const status = getStatus(item.expiry_date);
+    const location = item.location || "Refrigerator";
     return `
       <div class="bg-white rounded-2xl px-5 py-4 shadow-sm border border-slate-100 flex items-center justify-between gap-4 transition hover:shadow-md">
         <div class="flex items-center gap-3.5">
@@ -98,6 +104,7 @@ function renderCards(items) {
             <div class="flex items-center gap-2">
               <span class="font-bold text-slate-800 text-sm capitalize">${item.item_name}</span>
               <span class="text-xs font-extrabold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">Qty: ${item.quantity}</span>
+              <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-semibold">${location}</span>
             </div>
             <div class="flex flex-wrap items-center gap-2 mt-1">
               <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${status.style}">
@@ -118,11 +125,10 @@ function renderCards(items) {
                   class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm">
             -1
           </button>
-          <button data-action="delete" data-index="${index}"
-                  class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+          <button data-action="waste" data-index="${index}"
+                  class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs"
+                  title="Log Waste Autopsy">
+            🗑️
           </button>
         </div>
       </div>
@@ -138,7 +144,7 @@ function renderCards(items) {
       const act = btn.dataset.action;
       if (act === "timeline") openTimeline(item.id, item.item_name);
       else if (act === "decrement") decrementItem(item.id, item.quantity, item.item_name);
-      else if (act === "delete") deleteItem(item.id);
+      else if (act === "waste") triggerWasteAutopsyPrompt(item);
     });
   });
 }
@@ -165,39 +171,38 @@ window.decrementItem = async function(id, currentQty, itemName) {
       notes: "Finished product"
     }]);
     addDynamicRestock(itemName);
+    awardGamificationPoints(15, "Zero-Waste Item Depletion");
   }
   loadInventory();
 };
 
-window.deleteItem = async function(id) {
-  if (!supabaseClient) return;
-  if (confirm("Remove item from pantry?")) {
-    await supabaseClient.from("pantry_items").delete().eq("id", id);
-    loadInventory();
-  }
-};
-
-function updateMetrics(items) {
-  let soon = 0, within30 = 0, fresh = 0, exp = 0;
+async function updateMetrics(items) {
+  let soon = 0, within30 = 0, fresh = 0;
   
   items.forEach(i => {
     const s = getStatus(i.expiry_date);
     if (s.category === "Expiring Soon") soon++;
     else if (s.category === "Within 30 Days") within30++;
     else if (s.category === "Fresh") fresh++;
-    else if (s.category === "Expired") exp++;
   });
 
   document.getElementById("stat-total").innerText = items.length;
   document.getElementById("stat-soon").innerText = soon;
   document.getElementById("stat-within30").innerText = within30;
   document.getElementById("stat-fresh").innerText = fresh;
-  document.getElementById("stat-expired").innerText = exp;
+
+  if (supabaseClient) {
+    const { data: wastes } = await supabaseClient.from("waste_events").select("estimated_cost, quantity");
+    const totalLost = (wastes || []).reduce((acc, curr) => acc + (Number(curr.estimated_cost) * Number(curr.quantity || 1)), 0);
+    document.getElementById("stat-waste-cost").innerText = `₹${totalLost.toFixed(0)}`;
+  }
 }
 
-// --- Future Fridge Prediction Engine ---
+// --- Future Fridge & What NOT to Buy ---
 async function loadFutureFridgePredictions() {
   const container = document.getElementById("future-fridge-container");
+  const dontBuySec = document.getElementById("dont-buy-section");
+  const dontBuyContainer = document.getElementById("dont-buy-container");
   if (!container || !currentItems.length || !supabaseClient) return;
 
   try {
@@ -220,58 +225,294 @@ async function loadFutureFridgePredictions() {
     const data = await res.json();
     const next7 = data.next_7_days || [];
     const unpredicted = data.unpredicted || [];
+    const notToBuy = data.what_not_to_buy || [];
 
     if (!next7.length && !unpredicted.length) {
       container.innerHTML = `<p class="text-xs text-slate-400 col-span-4 text-center py-2">Add items to your vault to activate consumption forecasting.</p>`;
-      return;
+    } else {
+      let cardsHtml = "";
+      next7.forEach(p => {
+        const timeLabel = p.days_left === 1 ? "Tomorrow" : `In ${p.days_left} days`;
+        cardsHtml += `
+          <div class="bg-gradient-to-br from-amber-50/60 to-purple-50/40 border border-amber-200/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-black text-amber-700 uppercase tracking-wider">${timeLabel}</span>
+                <span class="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">${p.confidence}% confidence</span>
+              </div>
+              <h4 class="font-extrabold text-sm text-slate-800 capitalize">${p.item_name}</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">Stock: <strong class="text-slate-700">${p.current_qty} qty</strong></p>
+              <p class="text-[11px] text-slate-500">Depletes: <strong class="text-amber-700">${p.depletion_date}</strong></p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-amber-100/60 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Buy: <strong class="text-purple-700">${p.recommended_purchase} qty</strong></span>
+              <button data-restock-name="${encodeURIComponent(p.item_name)}" class="forecast-restock-btn text-purple-700 hover:text-purple-900 font-bold hover:underline">+ To Restock</button>
+            </div>
+          </div>
+        `;
+      });
+
+      unpredicted.slice(0, 4 - next7.length).forEach(u => {
+        cardsHtml += `
+          <div class="bg-slate-50/80 border border-slate-200/70 rounded-2xl p-4 flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Learning</span>
+              <h4 class="font-extrabold text-sm text-slate-700 capitalize">${u.item_name}</h4>
+              <p class="text-[11px] text-slate-400 italic mt-1">Not enough usage history yet.</p>
+            </div>
+            <p class="text-[10px] text-purple-600 mt-2 font-medium">Log usages in Life Tracker 🌱</p>
+          </div>
+        `;
+      });
+      container.innerHTML = cardsHtml;
+
+      container.querySelectorAll(".forecast-restock-btn").forEach(b => {
+        b.addEventListener("click", () => addDynamicRestock(decodeURIComponent(b.dataset.restockName)));
+      });
     }
 
-    let cardsHtml = "";
-
-    next7.forEach(p => {
-      const timeLabel = p.days_left === 1 ? "Tomorrow" : `In ${p.days_left} days`;
-      cardsHtml += `
-        <div class="bg-gradient-to-br from-amber-50/60 to-purple-50/40 border border-amber-200/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
-          <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-black text-amber-700 uppercase tracking-wider">${timeLabel}</span>
-              <span class="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">${p.confidence}% confidence</span>
-            </div>
-            <h4 class="font-extrabold text-sm text-slate-800 capitalize">${p.item_name}</h4>
-            <p class="text-[11px] text-slate-500 mt-0.5">Current Stock: <strong class="text-slate-700">${p.current_qty} qty</strong></p>
-            <p class="text-[11px] text-slate-500">Depletes: <strong class="text-amber-700">${p.depletion_date}</strong></p>
+    if (notToBuy.length && dontBuySec && dontBuyContainer) {
+      dontBuySec.classList.remove("hidden");
+      dontBuyContainer.innerHTML = notToBuy.map(item => `
+        <div class="bg-white p-3 rounded-xl border border-amber-200/60">
+          <div class="flex items-center justify-between">
+            <strong class="capitalize text-slate-800">${item.item_name}</strong>
+            <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-100 text-red-700">${item.status}</span>
           </div>
-          <div class="mt-3 pt-2 border-t border-amber-100/60 flex items-center justify-between text-[11px]">
-            <span class="text-slate-500">Buy: <strong class="text-purple-700">${p.recommended_purchase} qty</strong></span>
-            <button data-restock-name="${encodeURIComponent(p.item_name)}" class="forecast-restock-btn text-purple-700 hover:text-purple-900 font-bold hover:underline">+ To Restock</button>
-          </div>
+          <p class="text-[11px] text-slate-500 mt-1">${item.reason}</p>
         </div>
-      `;
-    });
-
-    unpredicted.slice(0, 4 - next7.length).forEach(u => {
-      cardsHtml += `
-        <div class="bg-slate-50/80 border border-slate-200/70 rounded-2xl p-4 flex flex-col justify-between">
-          <div>
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Learning</span>
-            <h4 class="font-extrabold text-sm text-slate-700 capitalize">${u.item_name}</h4>
-            <p class="text-[11px] text-slate-400 italic mt-1">Not enough usage history yet.</p>
-          </div>
-          <p class="text-[10px] text-purple-600 mt-2 font-medium">Log usages in Life Tracker 🌱</p>
-        </div>
-      `;
-    });
-
-    container.innerHTML = cardsHtml;
-
-    container.querySelectorAll(".forecast-restock-btn").forEach(b => {
-      b.addEventListener("click", () => {
-        addDynamicRestock(decodeURIComponent(b.dataset.restockName));
-      });
-    });
+      `).join("");
+    }
 
   } catch (err) {
     container.innerHTML = `<p class="text-xs text-red-500 col-span-4 text-center">Prediction status: ${err.message}</p>`;
+  }
+}
+
+// --- Waste Autopsy & True Cost Engine ---
+function initWasteAutopsy() {
+  const modalBtn = document.getElementById("autopsy-modal-btn");
+  const modal = document.getElementById("autopsy-modal");
+  const closeBtn = document.getElementById("close-autopsy-btn");
+
+  modalBtn?.addEventListener("click", async () => {
+    modal?.classList.remove("hidden");
+    await loadWasteAutopsyData();
+  });
+  closeBtn?.addEventListener("click", () => modal?.classList.add("hidden"));
+
+  const reasonModal = document.getElementById("waste-reason-modal");
+  document.getElementById("cancel-waste-btn")?.addEventListener("click", () => {
+    reasonModal?.classList.add("hidden");
+    activeWasteTarget = null;
+  });
+
+  document.getElementById("confirm-waste-btn")?.addEventListener("click", async () => {
+    if (!activeWasteTarget || !supabaseClient) return;
+    const reason = document.getElementById("waste-reason-select").value;
+
+    await supabaseClient.from("waste_events").insert([{
+      pantry_item_id: activeWasteTarget.id,
+      item_name: activeWasteTarget.item_name.toLowerCase().trim(),
+      quantity: activeWasteTarget.quantity || 1,
+      reason: reason,
+      estimated_cost: activeWasteTarget.price || 50.00
+    }]);
+
+    await supabaseClient.from("pantry_events").insert([{
+      pantry_item_id: activeWasteTarget.id,
+      item_name: activeWasteTarget.item_name.toLowerCase().trim(),
+      event_type: "WASTED",
+      quantity: activeWasteTarget.quantity || 1,
+      notes: `Wasted: ${reason}`
+    }]);
+
+    await supabaseClient.from("pantry_items").delete().eq("id", activeWasteTarget.id);
+
+    reasonModal?.classList.add("hidden");
+    activeWasteTarget = null;
+    loadInventory();
+  });
+}
+
+function triggerWasteAutopsyPrompt(item) {
+  activeWasteTarget = item;
+  document.getElementById("waste-item-target").innerText = `Item: ${item.item_name} (Qty: ${item.quantity})`;
+  document.getElementById("waste-reason-modal")?.classList.remove("hidden");
+}
+
+async function loadWasteAutopsyData() {
+  if (!supabaseClient) return;
+  const { data: wastes } = await supabaseClient.from("waste_events").select("*");
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/waste-autopsy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waste_events: wastes || [] })
+    });
+
+    if (!res.ok) throw new Error("Could not compute autopsy");
+    const data = await res.json();
+
+    document.getElementById("autopsy-loss").innerText = `₹${data.total_cost_lost}`;
+    document.getElementById("autopsy-annual").innerText = `₹${data.annual_projected_loss}`;
+    document.getElementById("autopsy-ai-action").innerText = `${data.ai_autopsy?.primary_cause || ""} Recommendation: ${data.ai_autopsy?.curative_action || "Keep near-expiry items prominent."}`;
+
+    const breakdown = document.getElementById("autopsy-breakdown-list");
+    const pcts = data.reason_percentages || {};
+    const keys = Object.keys(pcts);
+
+    if (!keys.length) {
+      breakdown.innerHTML = `<p class="text-slate-400 italic">No food waste recorded yet. Excellent pantry management!</p>`;
+    } else {
+      breakdown.innerHTML = keys.map(k => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-slate-700">
+            <span class="font-bold">${k}</span>
+            <span class="font-extrabold text-purple-700">${pcts[k]}%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-red-500 h-full rounded-full" style="width: ${pcts[k]}%"></div>
+          </div>
+        </div>
+      `).join("");
+    }
+  } catch (err) {
+    document.getElementById("autopsy-ai-action").innerText = err.message;
+  }
+}
+
+// --- Meal Rescue Missions & Gamification ---
+async function initGamification() {
+  if (!supabaseClient) return;
+  const { data } = await supabaseClient.from("user_gamification").select("*").limit(1);
+  if (data && data[0]) {
+    document.getElementById("user-points").innerText = `${data[0].points} pts`;
+    document.getElementById("user-level").innerText = data[0].level;
+  }
+
+  document.getElementById("ai-mission-trigger")?.addEventListener("click", () => {
+    document.getElementById("recipe-btn")?.click();
+    awardGamificationPoints(30, "Completed Meal Rescue Mission");
+  });
+}
+
+async function awardGamificationPoints(pointsToAdd, reason) {
+  if (!supabaseClient) return;
+  const { data } = await supabaseClient.from("user_gamification").select("*").limit(1);
+  if (!data || !data[0]) return;
+
+  const current = data[0];
+  const newPoints = current.points + pointsToAdd;
+  let newLevel = "Pantry Beginner";
+  if (newPoints >= 250) newLevel = "💎 Zero-Waste Master";
+  else if (newPoints >= 150) newLevel = "🥇 Waste Warrior";
+  else if (newPoints >= 60) newLevel = "🥈 Food Saver";
+
+  await supabaseClient.from("user_gamification").update({
+    points: newPoints,
+    level: newLevel,
+    rescued_count: current.rescued_count + 1
+  }).eq("id", current.id);
+
+  document.getElementById("user-points").innerText = `${newPoints} pts`;
+  document.getElementById("user-level").innerText = newLevel;
+}
+
+// --- Kitchen Digital Twin & Simulation ---
+function initDigitalTwin() {
+  const modalBtn = document.getElementById("twin-modal-btn");
+  const modal = document.getElementById("twin-modal");
+  const closeBtn = document.getElementById("close-twin-btn");
+
+  modalBtn?.addEventListener("click", () => {
+    modal?.classList.remove("hidden");
+    updateDigitalTwinUI();
+    runFutureSimulation(7);
+  });
+  closeBtn?.addEventListener("click", () => modal?.classList.add("hidden"));
+
+  document.getElementById("sim-7-btn")?.addEventListener("click", () => {
+    document.getElementById("sim-7-btn").className = "px-3 py-1 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-xs";
+    document.getElementById("sim-30-btn").className = "px-3 py-1 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-xs";
+    runFutureSimulation(7);
+  });
+
+  document.getElementById("sim-30-btn")?.addEventListener("click", () => {
+    document.getElementById("sim-30-btn").className = "px-3 py-1 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-xs";
+    document.getElementById("sim-7-btn").className = "px-3 py-1 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-xs";
+    runFutureSimulation(30);
+  });
+}
+
+function updateDigitalTwinUI() {
+  const fridgeList = document.getElementById("twin-fridge-items");
+  const freezerList = document.getElementById("twin-freezer-items");
+  const pantryList = document.getElementById("twin-pantry-items");
+  if (!fridgeList) return;
+
+  const fridgeItems = currentItems.filter(i => (i.location || "Refrigerator").toLowerCase() === "refrigerator");
+  const freezerItems = currentItems.filter(i => (i.location || "").toLowerCase() === "freezer");
+  const pantryItems = currentItems.filter(i => (i.location || "").toLowerCase() === "pantry");
+
+  document.getElementById("twin-fridge-count").innerText = fridgeItems.length;
+  document.getElementById("twin-freezer-count").innerText = freezerItems.length;
+  document.getElementById("twin-pantry-count").innerText = pantryItems.length;
+
+  fridgeList.innerHTML = fridgeItems.map(i => `<div class="p-1.5 bg-white rounded-lg border border-indigo-100 flex justify-between"><span>${i.item_name}</span><strong>${i.quantity}x</strong></div>`).join("") || '<p class="text-slate-400 italic">Empty</p>';
+  freezerList.innerHTML = freezerItems.map(i => `<div class="p-1.5 bg-white rounded-lg border border-cyan-100 flex justify-between"><span>${i.item_name}</span><strong>${i.quantity}x</strong></div>`).join("") || '<p class="text-slate-400 italic">Empty</p>';
+  pantryList.innerHTML = pantryItems.map(i => `<div class="p-1.5 bg-white rounded-lg border border-amber-100 flex justify-between"><span>${i.item_name}</span><strong>${i.quantity}x</strong></div>`).join("") || '<p class="text-slate-400 italic">Empty</p>';
+}
+
+async function runFutureSimulation(days) {
+  const container = document.getElementById("sim-results");
+  if (!container) return;
+  container.innerHTML = `<p class="col-span-4 text-slate-400 text-center py-2">Simulating next ${days} days...</p>`;
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/simulate-kitchen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inventory: currentItems, days: days })
+    });
+    if (!res.ok) throw new Error("Simulation failed");
+    const data = await res.json();
+
+    container.innerHTML = `
+      <div class="bg-white p-3 rounded-xl border border-slate-200">
+        <span class="text-slate-400 block font-bold">Projected Items</span>
+        <strong class="text-slate-800 text-sm">${data.projected_remaining} remaining</strong>
+      </div>
+      <div class="bg-white p-3 rounded-xl border border-amber-200">
+        <span class="text-amber-700 block font-bold">At Expiry Risk</span>
+        <strong class="text-amber-800 text-sm">${data.at_risk_expiry.length} items</strong>
+      </div>
+      <div class="bg-white p-3 rounded-xl border border-red-200">
+        <span class="text-red-700 block font-bold">Projected Waste</span>
+        <strong class="text-red-800 text-sm">${data.projected_waste_events} events</strong>
+      </div>
+      <div class="bg-white p-3 rounded-xl border border-emerald-200">
+        <span class="text-emerald-700 block font-bold">Rescue Meals</span>
+        <strong class="text-emerald-800 text-sm">${data.potential_rescue_meals} available</strong>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<p class="col-span-4 text-red-500">${err.message}</p>`;
+  }
+}
+
+// --- Unified Hub Banner ---
+function updateUnifiedAIHub() {
+  const hubText = document.getElementById("ai-hub-text");
+  if (!hubText) return;
+
+  const expiring = currentItems.filter(i => getStatus(i.expiry_date).category === "Expiring Soon");
+  if (expiring.length > 0) {
+    const names = expiring.slice(0, 3).map(i => i.item_name).join(", ");
+    hubText.innerText = `You have ${names} expiring soon! Click 'Start Rescue Mission' to prevent ₹150+ in waste.`;
+  } else {
+    hubText.innerText = "Vault is fully fresh! Kitchen running with zero immediate waste risks.";
   }
 }
 
@@ -361,6 +602,7 @@ document.getElementById("btn-mark-finished")?.addEventListener("click", async ()
   }]);
   await supabaseClient.from("pantry_items").delete().eq("id", activeTimelineItem.id);
   document.getElementById("timeline-modal").classList.add("hidden");
+  awardGamificationPoints(20, "100% Zero-Waste Consumption");
   loadInventory();
 });
 
@@ -380,9 +622,7 @@ function initIngredientGraph() {
     await renderRelationshipNetwork();
   });
 
-  closeBtn?.addEventListener("click", () => {
-    modal?.classList.add("hidden");
-  });
+  closeBtn?.addEventListener("click", () => modal?.classList.add("hidden"));
 
   canvas?.addEventListener("click", (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -603,10 +843,7 @@ function initKitchenMemory() {
     modal?.classList.remove("hidden");
     await loadKitchenMemory();
   });
-
-  closeBtn?.addEventListener("click", () => {
-    modal?.classList.add("hidden");
-  });
+  closeBtn?.addEventListener("click", () => modal?.classList.add("hidden"));
 }
 
 async function loadKitchenMemory() {
@@ -621,19 +858,13 @@ async function loadKitchenMemory() {
   actionableTip.innerText = "";
 
   try {
-    const { data: events, error } = await supabaseClient
-      .from("pantry_events")
-      .select("*");
-
+    const { data: events, error } = await supabaseClient.from("pantry_events").select("*");
     if (error) throw error;
 
     const res = await fetch(`${BACKEND_URL}/api/kitchen-memory`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        events: events || [],
-        inventory: currentItems
-      })
+      body: JSON.stringify({ events: events || [], inventory: currentItems })
     });
 
     if (!res.ok) throw new Error("Could not compute kitchen memory");
@@ -646,7 +877,7 @@ async function loadKitchenMemory() {
     if (!recs.length) {
       recsContainer.innerHTML = `
         <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
-          ✓ Great job! Your consumption rate matches your purchases without significant over-buying.
+          ✓ Great job! Your consumption matches your reorders without significant over-buying.
         </div>`;
     } else {
       recsContainer.innerHTML = recs.map(r => `
@@ -663,7 +894,7 @@ async function loadKitchenMemory() {
 
     const habits = data.habits || [];
     if (!habits.length) {
-      tableContainer.innerHTML = `<p class="text-xs text-slate-400 py-2 italic text-center">Log more items in your vault to unlock consumption ratio records.</p>`;
+      tableContainer.innerHTML = `<p class="text-xs text-slate-400 py-2 italic text-center">Log items to unlock consumption records.</p>`;
     } else {
       tableContainer.innerHTML = habits.map(h => `
         <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
@@ -677,7 +908,6 @@ async function loadKitchenMemory() {
         </div>
       `).join("");
     }
-
   } catch (err) {
     primaryHabit.innerText = "Kitchen Memory unavailable";
     actionableTip.innerText = err.message;
@@ -822,11 +1052,12 @@ function initFormListeners() {
     if (!supabaseClient) return alert("Supabase credentials missing in app.js");
 
     const item_name = document.getElementById("manual-name").value.trim();
+    const location = document.getElementById("manual-loc").value;
     const expiry_date = document.getElementById("manual-expiry").value;
     const quantity = parseInt(document.getElementById("manual-qty").value, 10);
 
     const { data, error } = await supabaseClient.from("pantry_items").insert([{
-      item_name, expiry_date, quantity
+      item_name, expiry_date, quantity, location
     }]).select();
 
     if (error) {
@@ -838,7 +1069,7 @@ function initFormListeners() {
           item_name: item_name.toLowerCase().trim(),
           event_type: "PURCHASED",
           quantity: quantity,
-          notes: "Logged via Manual Add"
+          notes: `Logged into ${location}`
         }]);
       }
       e.target.reset();
@@ -903,7 +1134,7 @@ function initFormListeners() {
         const out = await res.json();
 
         if (scanMode === "receipt") {
-          const itemsToInsert = out.items || [];
+          const itemsToInsert = (out.items || []).map(i => ({ ...i, location: "Refrigerator" }));
           if (!itemsToInsert.length) throw new Error("No items could be extracted from this receipt.");
 
           const { data, error } = await supabaseClient.from("pantry_items").insert(itemsToInsert).select();
@@ -927,7 +1158,8 @@ function initFormListeners() {
           const { data, error } = await supabaseClient.from("pantry_items").insert([{
             item_name: out.item_name || "Scanned Item",
             expiry_date: out.expiry_date,
-            quantity: quantity
+            quantity: quantity,
+            location: "Refrigerator"
           }]).select();
           if (error) throw new Error("Supabase Database Error: " + error.message);
 
@@ -1096,31 +1328,120 @@ window.runDynamicTimer = function(elementId, seconds) {
 };
 
 function updateChart(items) {
-  const counts = { Fresh: 0, "Within 30 Days": 0, "Expiring Soon": 0, Expired: 0 };
+  const counts = {
+    Fresh: 0,
+    "Within 30 Days": 0,
+    "Expiring Soon": 0,
+    Expired: 0
+  };
+
   items.forEach(i => {
     const s = getStatus(i.expiry_date);
-    counts[s.category] = (counts[s.category] || 0) + 1;
+    if (counts[s.category] !== undefined) {
+      counts[s.category] += (i.quantity || 1);
+    }
   });
+
+  const total = items.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
+
+  const centerEl = document.getElementById("gauge-center-val");
+  const captionEl = document.getElementById("chart-total-caption");
+  if (centerEl) centerEl.innerText = total;
+  if (captionEl) captionEl.innerText = `${total} Total Units`;
+
+  document.getElementById("tier-count-fresh").innerText = `${counts.Fresh}x`;
+  document.getElementById("tier-count-within30").innerText = `${counts["Within 30 Days"]}x`;
+  document.getElementById("tier-count-soon").innerText = `${counts["Expiring Soon"]}x`;
+  document.getElementById("tier-count-expired").innerText = `${counts.Expired}x`;
+
+  const pctFresh = total > 0 ? (counts.Fresh / total) * 100 : 0;
+  const pctWithin30 = total > 0 ? (counts["Within 30 Days"] / total) * 100 : 0;
+  const pctSoon = total > 0 ? (counts["Expiring Soon"] / total) * 100 : 0;
+  const pctExpired = total > 0 ? (counts.Expired / total) * 100 : 0;
+
+  document.getElementById("tier-bar-fresh").style.width = `${pctFresh}%`;
+  document.getElementById("tier-bar-within30").style.width = `${pctWithin30}%`;
+  document.getElementById("tier-bar-soon").style.width = `${pctSoon}%`;
+  document.getElementById("tier-bar-expired").style.width = `${pctExpired}%`;
+
+  document.getElementById("bar-fresh").style.width = `${pctFresh}%`;
+  document.getElementById("bar-within30").style.width = `${pctWithin30}%`;
+  document.getElementById("bar-soon").style.width = `${pctSoon}%`;
+  document.getElementById("bar-expired").style.width = `${pctExpired}%`;
+
+  let healthScore = 100;
+  if (total > 0) {
+    const weighted = (counts.Fresh * 1.0) + (counts["Within 30 Days"] * 0.85) + (counts["Expiring Soon"] * 0.35) + (counts.Expired * 0);
+    healthScore = Math.max(Math.round((weighted / total) * 100), 0);
+  }
+
+  const healthScoreEl = document.getElementById("health-score-val");
+  const healthBadgeEl = document.getElementById("health-badge");
+  const healthVerdictEl = document.getElementById("chart-health-verdict");
+
+  if (healthScoreEl) healthScoreEl.innerText = `${healthScore}%`;
+
+  if (healthBadgeEl && healthVerdictEl) {
+    if (healthScore >= 80) {
+      healthBadgeEl.className = "px-3 py-1 rounded-full text-xs font-black tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200";
+      healthVerdictEl.innerText = "✓ Excellent balance: The vast majority of stock is fresh.";
+    } else if (healthScore >= 50) {
+      healthBadgeEl.className = "px-3 py-1 rounded-full text-xs font-black tracking-wide border bg-amber-50 text-amber-700 border-amber-200";
+      healthVerdictEl.innerText = "⚠️ Attention needed: Prioritize cooking items in the amber tier.";
+    } else {
+      healthBadgeEl.className = "px-3 py-1 rounded-full text-xs font-black tracking-wide border bg-red-50 text-red-700 border-red-200";
+      healthVerdictEl.innerText = "🛑 High spoilage risk: Immediate meal rescue action required!";
+    }
+  }
 
   const canvas = document.getElementById("freshnessChart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
+  const chartDataValues = total === 0 ? [1] : [counts.Fresh, counts["Within 30 Days"], counts["Expiring Soon"], counts.Expired];
+  const chartColors = total === 0 ? ["#e2e8f0"] : ["#10b981", "#facc15", "#f97316", "#ef4444"];
+
   chartInstance = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: Object.keys(counts),
+      labels: total === 0 ? ["No Items"] : ["Fresh & Peak", "Safe (8–30 Days)", "Priority (≤ 7 Days)", "Expired"],
       datasets: [{
-        data: Object.values(counts),
-        backgroundColor: ["#10b981", "#eab308", "#f59e0b", "#ef4444"],
-        borderWidth: 2,
-        borderColor: "#ffffff"
+        data: chartDataValues,
+        backgroundColor: chartColors,
+        borderWidth: 3,
+        borderColor: "#ffffff",
+        hoverBorderWidth: 4,
+        borderRadius: 8,
+        cutout: "76%"
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { position: "bottom" } }
+      maintainAspectRatio: true,
+      animation: {
+        animateScale: true,
+        animateRotate: true,
+        duration: 900
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: total > 0,
+          backgroundColor: "rgba(15, 23, 42, 0.9)",
+          titleFont: { size: 12, weight: "bold", family: "'Plus Jakarta Sans', sans-serif" },
+          bodyFont: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+          padding: 10,
+          cornerRadius: 12,
+          callbacks: {
+            label: function(context) {
+              const count = context.parsed;
+              const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+              return ` ${count} items (${pct}%)`;
+            }
+          }
+        }
+      }
     }
   });
 }

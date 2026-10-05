@@ -11,9 +11,9 @@
 </head>
 <body class="bg-gradient-to-br from-[#f5f3ff] via-[#faf5ff] to-[#f3e8ff] min-h-screen text-slate-800 p-4 md:p-8">
 
-  <div class="max-w-5xl mx-auto space-y-6">
-    <!-- Header -->
-    <header class="flex flex-col sm:flex-row items-center justify-between pb-2 border-b border-purple-100 gap-4">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header with Gamification Points Badge -->
+    <header class="flex flex-col sm:flex-row items-center justify-between pb-3 border-b border-purple-100 gap-4">
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-purple-200">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,26 +22,55 @@
         </div>
         <div>
           <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">VaultTracker</h1>
-          <p class="text-xs text-slate-500 font-medium">Smart AI Pantry & Zero-Waste Meal Planner</p>
+          <p class="text-xs text-slate-500 font-medium">Kitchen Intelligence &bull; Zero-Waste Operating System</p>
         </div>
       </div>
       
-      <div class="flex items-center gap-2">
-        <button id="memory-modal-btn" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-sm font-semibold px-3 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5">
-          <span>🧠 Kitchen Memory</span>
+      <!-- Top Action Ribbon -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xs">
+          <span class="text-sm">💎</span>
+          <div>
+            <p id="user-points" class="text-xs font-black text-amber-900">0 pts</p>
+            <p id="user-level" class="text-[9px] font-bold text-amber-700 uppercase">Pantry Beginner</p>
+          </div>
+        </div>
+
+        <button id="twin-modal-btn" class="bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 text-xs font-bold px-3 py-2 rounded-xl shadow-xs transition flex items-center gap-1">
+          <span>🧊 Digital Twin</span>
         </button>
-        <button id="graph-modal-btn" class="bg-purple-100 hover:bg-purple-200 border border-purple-200 text-purple-800 text-sm font-semibold px-3 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5">
-          <span>🕸 Ingredient Graph</span>
+        <button id="autopsy-modal-btn" class="bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 text-xs font-bold px-3 py-2 rounded-xl shadow-xs transition flex items-center gap-1">
+          <span>💀 Waste Autopsy</span>
         </button>
-        <button id="cart-drawer-btn" class="bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5 relative">
-          <span>🛒 Restock List</span>
+        <button id="memory-modal-btn" class="bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-2 rounded-xl shadow-xs transition flex items-center gap-1">
+          <span>🧠 Memory</span>
+        </button>
+        <button id="graph-modal-btn" class="bg-purple-100 border border-purple-200 hover:bg-purple-200 text-purple-800 text-xs font-bold px-3 py-2 rounded-xl shadow-xs transition flex items-center gap-1">
+          <span>🕸 Graph</span>
+        </button>
+        <button id="cart-drawer-btn" class="bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 text-xs font-bold px-3 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 relative">
+          <span>🛒 Restock</span>
           <span id="cart-badge" class="hidden bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
         </button>
-        <button id="recipe-btn" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-2">
-          <span id="recipe-btn-icon">👨‍🍳</span> <span id="recipe-btn-text">Cook Expiring Items</span>
+        <button id="recipe-btn" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-emerald-200 transition flex items-center gap-1.5">
+          <span>👨‍🍳</span> <span id="recipe-btn-text">Cook Expiring Items</span>
         </button>
       </div>
     </header>
+
+    <!-- Unified Intelligence Hub Banner -->
+    <div id="ai-hub-alert" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl p-2 bg-white/10 rounded-xl">🤖</span>
+        <div>
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-purple-200">Vault AI Real-Time Guidance</h3>
+          <p id="ai-hub-text" class="text-sm font-semibold mt-0.5">Scanning pantry status and zero-waste optimization pathways...</p>
+        </div>
+      </div>
+      <button id="ai-mission-trigger" class="bg-white text-purple-900 font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-xs hover:bg-purple-50 transition whitespace-nowrap">
+        Start Rescue Mission (+30 pts)
+      </button>
+    </div>
 
     <!-- Top KPI Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4">
@@ -75,31 +104,41 @@
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between col-span-2 sm:col-span-1">
         <div>
-          <p class="text-xs font-semibold text-red-500">Expired</p>
-          <p id="stat-expired" class="text-lg md:text-xl font-extrabold text-red-600">0</p>
+          <p class="text-xs font-semibold text-red-500">Waste Cost</p>
+          <p id="stat-waste-cost" class="text-lg md:text-xl font-extrabold text-red-600">₹0</p>
         </div>
-        <span class="text-xl">⚠️</span>
+        <span class="text-xl">💰</span>
       </div>
     </div>
 
-    <!-- Future Fridge Prediction Section -->
+    <!-- Future Fridge Prediction Ribbon -->
     <section class="bg-white rounded-2xl p-6 border border-purple-100/90 shadow-sm space-y-4">
       <div class="flex items-center justify-between border-b pb-3 border-purple-50">
         <div>
           <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
             <span>🔮</span> Future Fridge &bull; Consumption Prediction
           </h2>
-          <p class="text-xs text-slate-500">Estimates when household ingredients will run out based on consumption velocity</p>
+          <p class="text-xs text-slate-500">Estimates depletion velocity and run-out projections</p>
         </div>
         <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
           Next 7 Days Forecast
         </span>
       </div>
-
       <div id="future-fridge-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <p class="text-xs text-slate-400 py-3 col-span-4 text-center">Calculating consumption models...</p>
       </div>
     </section>
+
+    <!-- "What NOT to Buy" Intelligence Banner -->
+    <div id="dont-buy-section" class="hidden bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-2">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+          <span>🚫</span> Smart Grocery Restock Intelligence: What NOT to Buy
+        </h3>
+        <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Sufficient Stock</span>
+      </div>
+      <div id="dont-buy-container" class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs"></div>
+    </div>
 
     <!-- Chef Filters Bar -->
     <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -126,10 +165,20 @@
           <span class="text-purple-600 font-extrabold">+</span> Manual Add
         </h2>
         <form id="manual-form" class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Item Name</label>
-            <input type="text" id="manual-name" required placeholder="e.g., Cheddar Cheese, Bread" 
-                   class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition" />
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Item Name</label>
+              <input type="text" id="manual-name" required placeholder="e.g., Cheddar Cheese, Bread" 
+                     class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Storage Area</label>
+              <select id="manual-loc" class="w-full px-2 py-2.5 text-xs border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400">
+                <option value="Refrigerator">Fridge</option>
+                <option value="Freezer">Freezer</option>
+                <option value="Pantry">Pantry</option>
+              </select>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -191,17 +240,316 @@
         </h2>
         <span class="text-xs text-slate-400">Sorted by earliest expiry</span>
       </div>
-
       <div id="inventory-list" class="space-y-2.5">
         <p class="text-center text-slate-500 text-sm py-6">Loading vault...</p>
       </div>
     </div>
 
-    <!-- Freshness Chart -->
-    <div class="bg-white rounded-2xl p-6 border border-purple-100 shadow-sm">
-      <h3 class="text-sm font-bold text-slate-700 mb-3">Pantry Shelf-Life Distribution</h3>
-      <div class="max-w-xs mx-auto">
-        <canvas id="freshnessChart"></canvas>
+    <!-- Executive Freshness Analytics & Health Gauge Card -->
+    <section class="bg-white/90 backdrop-blur-md rounded-3xl p-6 md:p-8 border border-purple-100/80 shadow-xl shadow-purple-500/5 space-y-6 transition hover:shadow-2xl hover:shadow-purple-500/10">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-purple-50 gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-base font-extrabold text-slate-900 tracking-tight">Pantry Freshness & Longevity Distribution</h3>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">Real-time shelf-life balance and health velocity across all stored goods</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="health-badge" class="px-3 py-1 rounded-full text-xs font-black tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200">
+            Vault Health: <span id="health-score-val">100%</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Segmented Longevity Proportion Bar -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-[11px] font-bold text-slate-500">
+          <span>Inventory Composition</span>
+          <span id="chart-total-caption" class="text-purple-700 font-extrabold">0 Total Items</span>
+        </div>
+        <div id="freshness-stacked-bar" class="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+          <div id="bar-fresh" style="width: 0%" class="bg-emerald-500 transition-all duration-700 ease-out" title="Fresh"></div>
+          <div id="bar-within30" style="width: 0%" class="bg-yellow-400 transition-all duration-700 ease-out" title="Within 30 Days"></div>
+          <div id="bar-soon" style="width: 0%" class="bg-amber-500 transition-all duration-700 ease-out" title="Expiring Soon"></div>
+          <div id="bar-expired" style="width: 0%" class="bg-red-500 transition-all duration-700 ease-out" title="Expired"></div>
+        </div>
+      </div>
+
+      <!-- Grid: Interactive Breakdown Cards + Modern Rounded Chart -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        <div class="md:col-span-5 relative flex flex-col items-center justify-center p-3">
+          <div class="relative w-48 h-48 flex items-center justify-center">
+            <canvas id="freshnessChart"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span id="gauge-center-val" class="text-2xl font-black text-slate-800 tracking-tight">0</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Units Tracked</span>
+            </div>
+          </div>
+          <p id="chart-health-verdict" class="text-xs font-semibold text-slate-600 text-center mt-3">
+            Pantry is in optimal condition.
+          </p>
+        </div>
+
+        <div class="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3" id="freshness-tiers-grid">
+          <!-- Fresh Tier -->
+          <div class="bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl transition duration-200">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Fresh & Peak
+              </span>
+              <strong id="tier-count-fresh" class="text-sm font-extrabold text-emerald-900">0x</strong>
+            </div>
+            <div class="w-full bg-emerald-100/60 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div id="tier-bar-fresh" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-[10px] text-emerald-700/80 mt-1.5 font-medium">&gt; 30 days remaining</p>
+          </div>
+
+          <!-- Within 30 Days -->
+          <div class="bg-yellow-50/50 hover:bg-yellow-50 border border-yellow-100 p-3.5 rounded-2xl transition duration-200">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Safe (8–30 Days)
+              </span>
+              <strong id="tier-count-within30" class="text-sm font-extrabold text-yellow-900">0x</strong>
+            </div>
+            <div class="w-full bg-yellow-100/60 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div id="tier-bar-within30" class="bg-yellow-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-[10px] text-yellow-700/80 mt-1.5 font-medium">Stable shelf life</p>
+          </div>
+
+          <!-- Expiring Soon -->
+          <div class="bg-amber-50/60 hover:bg-amber-50 border border-amber-200/80 p-3.5 rounded-2xl transition duration-200">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> Priority (&le; 7 Days)
+              </span>
+              <strong id="tier-count-soon" class="text-sm font-extrabold text-amber-900">0x</strong>
+            </div>
+            <div class="w-full bg-amber-100/60 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div id="tier-bar-soon" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-[10px] text-amber-800 mt-1.5 font-bold">Needs cooking soon</p>
+          </div>
+
+          <!-- Expired -->
+          <div class="bg-red-50/50 hover:bg-red-50 border border-red-100 p-3.5 rounded-2xl transition duration-200">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span> Expired
+              </span>
+              <strong id="tier-count-expired" class="text-sm font-extrabold text-red-900">0x</strong>
+            </div>
+            <div class="w-full bg-red-100/60 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div id="tier-bar-expired" class="bg-red-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-[10px] text-red-700/80 mt-1.5 font-medium">Action: Log Waste Autopsy</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Kitchen Digital Twin & 7/30-Day Simulation Modal -->
+  <div id="twin-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl space-y-6 my-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-start border-b pb-3">
+        <div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center gap-2">
+            <span>🧊</span> Kitchen Digital Twin & Simulation
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Explore physical storage compartments and simulate future inventory states</p>
+        </div>
+        <button id="close-twin-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <!-- Compartments: Refrigerator, Freezer, Pantry -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="twin-box p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-indigo-900">❄️ Refrigerator</h4>
+            <span id="twin-fridge-count" class="text-xs bg-indigo-200 text-indigo-900 px-2 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div id="twin-fridge-items" class="space-y-1.5 max-h-40 overflow-y-auto text-xs text-slate-700"></div>
+        </div>
+
+        <div class="twin-box p-4 rounded-2xl border-2 border-cyan-200 bg-cyan-50/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-cyan-900">🧊 Deep Freezer</h4>
+            <span id="twin-freezer-count" class="text-xs bg-cyan-200 text-cyan-900 px-2 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div id="twin-freezer-items" class="space-y-1.5 max-h-40 overflow-y-auto text-xs text-slate-700"></div>
+        </div>
+
+        <div class="twin-box p-4 rounded-2xl border-2 border-amber-200 bg-amber-50/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-amber-900">🌾 Dry Pantry</h4>
+            <span id="twin-pantry-count" class="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div id="twin-pantry-items" class="space-y-1.5 max-h-40 overflow-y-auto text-xs text-slate-700"></div>
+        </div>
+      </div>
+
+      <!-- Timeline Simulation Controls -->
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-sm text-slate-800">Timeline Projection Simulation</h4>
+            <p class="text-xs text-slate-500">Project upcoming restock demands and expiry risks</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="sim-7-btn" class="px-3 py-1 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-xs">Simulate 7 Days</button>
+            <button id="sim-30-btn" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold shadow-xs">Simulate 30 Days</button>
+          </div>
+        </div>
+        <div id="sim-results" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waste Autopsy & True Cost Modal -->
+  <div id="autopsy-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-2xl space-y-5 my-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-start border-b pb-3">
+        <div>
+          <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+            <span>💀</span> Food Waste Autopsy & True Cost
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Understand why food is lost and uncover direct financial waste</p>
+        </div>
+        <button id="close-autopsy-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-center">
+        <div class="bg-red-50 border border-red-200 p-3 rounded-2xl">
+          <p class="text-xs text-red-600 font-bold uppercase">Estimated Waste Loss</p>
+          <p id="autopsy-loss" class="text-xl font-extrabold text-red-700 mt-0.5">₹0.00</p>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
+          <p class="text-xs text-amber-700 font-bold uppercase">Projected Annual Loss</p>
+          <p id="autopsy-annual" class="text-xl font-extrabold text-amber-800 mt-0.5">₹0.00</p>
+        </div>
+      </div>
+
+      <div class="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-xs space-y-1">
+        <strong class="text-purple-900 uppercase tracking-wider text-[10px] block">AI Preventive Prescription</strong>
+        <p id="autopsy-ai-action" class="text-slate-700">Analyzing root causes...</p>
+      </div>
+
+      <div class="space-y-2">
+        <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Breakdown of Disposal Reasons</h4>
+        <div id="autopsy-breakdown-list" class="space-y-2 text-xs">
+          <p class="text-slate-400 italic">No waste records logged yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discard / Waste Reason Prompt Modal -->
+  <div id="waste-reason-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="border-b pb-2">
+        <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+          <span>🗑️</span> Waste Autopsy Investigation
+        </h4>
+        <p id="waste-item-target" class="text-xs text-purple-700 font-bold mt-1">Item: Spinach</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Why wasn't this food used?</label>
+        <select id="waste-reason-select" class="w-full text-xs border border-slate-200 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-purple-400">
+          <option value="Forgot about it">Forgot about it</option>
+          <option value="Bought too much">Bought too much</option>
+          <option value="Expired too quickly">Expired too quickly</option>
+          <option value="Didn't know what to cook">Didn't know what to cook</option>
+          <option value="Didn't like it">Didn't like it</option>
+          <option value="Storage problem">Storage problem</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button id="cancel-waste-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs">Cancel</button>
+        <button id="confirm-waste-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-xs">Log Autopsy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ingredient Graph Modal -->
+  <div id="graph-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl space-y-5 my-8 max-h-[92vh] overflow-y-auto flex flex-col justify-between">
+      <div class="flex justify-between items-start border-b pb-3">
+        <div>
+          <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+            <span>🕸</span> Ingredient Relationship Graph
+          </h3>
+          <p id="graph-synergy-banner" class="text-xs text-purple-700 font-semibold mt-0.5">
+            Calculating ingredient affinities and cohesive meal combinations...
+          </p>
+        </div>
+        <button id="close-graph-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+        <div class="md:col-span-2 bg-slate-50/80 rounded-2xl border border-purple-100 p-2 relative flex items-center justify-center">
+          <canvas id="relationshipCanvas" width="540" height="380" class="w-full h-auto cursor-pointer"></canvas>
+          <span class="absolute bottom-3 left-3 text-[10px] text-slate-400 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200">
+            Click any ingredient node to inspect
+          </span>
+        </div>
+
+        <div id="node-inspector" class="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 space-y-3 text-xs">
+          <div class="border-b border-purple-100 pb-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Selected Ingredient</span>
+            <h4 id="inspector-name" class="font-extrabold text-base text-slate-900 capitalize">None Selected</h4>
+          </div>
+          <div class="space-y-1 text-slate-600">
+            <p>Current Stock: <strong id="inspector-qty" class="text-slate-800">--</strong></p>
+            <p>Expiry: <strong id="inspector-expiry" class="text-slate-800">--</strong></p>
+          </div>
+          <div>
+            <p class="font-bold text-purple-800 text-[11px] uppercase tracking-wider mb-1.5">Commonly Paired With:</p>
+            <div id="inspector-pairs" class="flex flex-wrap gap-1">
+              <span class="text-slate-400 italic text-[11px]">Click a circle node to see affinities.</span>
+            </div>
+          </div>
+          <button id="inspector-cook-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-xs mt-2">
+            Cook With This Ingredient
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kitchen Memory Modal -->
+  <div id="memory-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-5 my-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-start border-b pb-3">
+        <div>
+          <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+            <span>🧠</span> VaultTracker Kitchen Memory
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Long-term behavioral insights and over-buying prevention</p>
+        </div>
+        <button id="close-memory-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <div id="memory-ai-banner" class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 space-y-1">
+        <span class="text-[10px] font-black uppercase tracking-wider text-purple-700 block">Behavioral Analysis</span>
+        <h4 id="memory-primary-habit" class="font-extrabold text-sm text-slate-800">Analyzing recurring consumption patterns...</h4>
+        <p id="memory-actionable-tip" class="text-xs text-slate-600"></p>
+      </div>
+
+      <div class="space-y-2">
+        <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Purchase Adjustments & Recommendations</h4>
+        <div id="memory-recommendations-list" class="space-y-2">
+          <p class="text-xs text-slate-400 italic">No over-purchasing detected yet.</p>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-100">
+        <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Replenishment vs Consumption Record</h4>
+        <div id="memory-habits-table" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 text-xs"></div>
       </div>
     </div>
   </div>
@@ -285,85 +633,6 @@
       <div class="space-y-3 pt-2">
         <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Product Milestone History</h4>
         <div id="timeline-flow" class="relative pl-6 space-y-4 border-l-2 border-purple-200 ml-2 text-xs max-h-60 overflow-y-auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Feature 4: Ingredient Relationship Graph Modal -->
-  <div id="graph-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl space-y-5 my-8 max-h-[92vh] overflow-y-auto flex flex-col justify-between">
-      <div class="flex justify-between items-start border-b pb-3">
-        <div>
-          <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
-            <span>🕸</span> Ingredient Relationship Graph
-          </h3>
-          <p id="graph-synergy-banner" class="text-xs text-purple-700 font-semibold mt-0.5">
-            Calculating ingredient affinities and cohesive meal combinations...
-          </p>
-        </div>
-        <button id="close-graph-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        <div class="md:col-span-2 bg-slate-50/80 rounded-2xl border border-purple-100 p-2 relative flex items-center justify-center">
-          <canvas id="relationshipCanvas" width="540" height="380" class="w-full h-auto cursor-pointer"></canvas>
-          <span class="absolute bottom-3 left-3 text-[10px] text-slate-400 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200">
-            Click any ingredient node to inspect
-          </span>
-        </div>
-
-        <div id="node-inspector" class="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 space-y-3 text-xs">
-          <div class="border-b border-purple-100 pb-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Selected Ingredient</span>
-            <h4 id="inspector-name" class="font-extrabold text-base text-slate-900 capitalize">None Selected</h4>
-          </div>
-          <div class="space-y-1 text-slate-600">
-            <p>Current Stock: <strong id="inspector-qty" class="text-slate-800">--</strong></p>
-            <p>Expiry: <strong id="inspector-expiry" class="text-slate-800">--</strong></p>
-          </div>
-          <div>
-            <p class="font-bold text-purple-800 text-[11px] uppercase tracking-wider mb-1.5">Commonly Paired With:</p>
-            <div id="inspector-pairs" class="flex flex-wrap gap-1">
-              <span class="text-slate-400 italic text-[11px]">Click a circle node to see affinities.</span>
-            </div>
-          </div>
-          <button id="inspector-cook-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-xs mt-2">
-            Cook With This Ingredient
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Feature 5: Kitchen Memory Modal -->
-  <div id="memory-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-5 my-8 max-h-[92vh] overflow-y-auto">
-      <div class="flex justify-between items-start border-b pb-3">
-        <div>
-          <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
-            <span>🧠</span> VaultTracker Kitchen Memory
-          </h3>
-          <p class="text-xs text-slate-500 mt-0.5">Long-term behavioral insights, purchase habits, and over-buying prevention</p>
-        </div>
-        <button id="close-memory-btn" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none">&times;</button>
-      </div>
-
-      <div id="memory-ai-banner" class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 space-y-1">
-        <span class="text-[10px] font-black uppercase tracking-wider text-purple-700 block">Behavioral Analysis</span>
-        <h4 id="memory-primary-habit" class="font-extrabold text-sm text-slate-800">Analyzing recurring consumption patterns...</h4>
-        <p id="memory-actionable-tip" class="text-xs text-slate-600"></p>
-      </div>
-
-      <div class="space-y-2">
-        <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Purchase Adjustments & Recommendations</h4>
-        <div id="memory-recommendations-list" class="space-y-2">
-          <p class="text-xs text-slate-400 italic">No over-purchasing detected yet.</p>
-        </div>
-      </div>
-
-      <div class="space-y-2 pt-2 border-t border-slate-100">
-        <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Replenishment vs Consumption Record</h4>
-        <div id="memory-habits-table" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 text-xs"></div>
       </div>
     </div>
   </div>

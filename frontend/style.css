@@ -55,3 +55,23 @@ body {
     transform: translateX(0);
   }
 }
+
+/* Card and Twin Hover Depth */
+.twin-box {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.twin-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(147, 51, 234, 0.1);
+}
+
+/* Freshness Gauge Pulse Glow */
+#health-badge {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+/* Custom transitions for progress bar fills */
+#freshness-stacked-bar > div {
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
